@@ -5,6 +5,12 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import com.example.shared.model.UserRequest;
 
 @Service
@@ -12,16 +18,18 @@ public class ProcessingService {
 
     private final RestTemplate restTemplate;
     private final RequestStorage storage;
+    private final boolean isLeader;
 
     public ProcessingService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
         this.storage = storage;
+        isLeader = true;
     }
     // only leader run this 
     @PostConstruct
     public void processingThread() {
         Thread checkingThread = new Thread(() -> {
-            while (true) { 
+            while (isLeader) { 
                 // try {
                 //     // String url = "http://localhost:8081/llm/status";
                 //     // String status = restTemplate.getForObject(url, String.class);
@@ -37,6 +45,7 @@ public class ProcessingService {
                         request.setState("formatted");
                         storage.addRequest(id, request);
                         // send the copy to other nodes
+
                     } else if (request.getState().equals("formatted")) {
                         // get the db nodes to process
                         // added all the new result back to request
@@ -44,14 +53,16 @@ public class ProcessingService {
                         request.setState("unformatted result");
                         storage.addRequest(id, request);
                         // send the copy to other nodes
+
                     } else if (request.getState().equals("unformatted result")) {
                         // get the llm node to process
                         // added all the new result back to request
                         Thread.sleep(5000); 
                         request.setState("done");
                         request.setResult("final result is here");
-                        storage.addRequest(id, request);
+                        storage.storeRequest(id, request);
                         // send the copy to other nodes
+                        
                     } else {
                         System.out.println("Something went very wrong");
                     }
@@ -59,7 +70,7 @@ public class ProcessingService {
                     Thread.currentThread().interrupt();
                     System.err.println("The sleep was interrupted.");
                 } catch (Exception e) {
-                    System.out.println("Soemthign");
+                    System.out.println("The node cannot be called");
                 }
                 //     // read from queue
                 
@@ -89,5 +100,18 @@ public class ProcessingService {
 
         checkingThread.setDaemon(true); 
         checkingThread.start();
+    }
+
+    public void broadCastCopy(UserRequest request) {
+        try {
+            String url = "http://localhost:8090/copy";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<UserRequest> requestEntity = new HttpEntity<>(request, headers);
+            Boolean success = restTemplate.postForObject(url, requestEntity, Boolean.class);
+            System.out.println("Copy sent");
+        } catch (Exception e) {System.out.println("Broadcast failed.")}
     }
 }

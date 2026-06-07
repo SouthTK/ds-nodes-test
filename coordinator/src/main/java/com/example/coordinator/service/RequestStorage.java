@@ -3,8 +3,9 @@ package com.example.coordinator.service;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
-import java.util.HashMap;
+
 
 import com.example.shared.model.UserRequest;
 
@@ -12,21 +13,23 @@ import com.example.shared.model.UserRequest;
 public class RequestStorage {
 
     private final LinkedBlockingQueue<String> requestQueue = new LinkedBlockingQueue<>(100);
-    private final HashMap<String, UserRequest> requestStatus = new HashMap<>();
+    private final ConcurrentHashMap<String, UserRequest> requestStatus = new ConcurrentHashMap<>();
 
-    // not thread safe yet
     public void addRequest(String id, UserRequest request) {
         try {
             requestStatus.put(id, request);
-            System.out.println("added");
             if (!request.getState().equals("done")) {
                 requestQueue.put(id);
             }
-            
         } catch (Exception e) {}
-
     }
-    // not thread safe yet
+
+    public void storeRequest(String id, UserRequest request) {
+        try {
+            requestStatus.put(id, request);
+        } catch (Exception e) {}
+    }
+
     public UserRequest getRequest(String id) {
         return requestStatus.get(id);
     }
@@ -35,6 +38,7 @@ public class RequestStorage {
         try {
             return requestQueue.take();
         } catch (Exception e) {return "error";}
-        
     }
+
+    public void updateQueue() {} // for new leader mid runtime
 }

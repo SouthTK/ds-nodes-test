@@ -46,7 +46,7 @@ public class SearchController {
 
     @PostMapping("/copy") 
     public boolean copy(@RequestBody UserRequest request) { 
-        storage.addRequest(request.getId(), request);
+        storage.storeRequest(request.getId(), request);
         return true;
     }
     // returns false if leader??
