@@ -40,5 +40,18 @@ public class RequestStorage {
         } catch (Exception e) {return "error";}
     }
 
+    public void broadCastCopy(UserRequest request) {
+        // try {
+        //     String url = "http://localhost:8090/copy";
+
+        //     HttpHeaders headers = new HttpHeaders();
+        //     headers.setContentType(MediaType.APPLICATION_JSON);
+
+        //     HttpEntity<UserRequest> requestEntity = new HttpEntity<>(request, headers);
+        //     Boolean success = restTemplate.postForObject(url, requestEntity, Boolean.class);
+        //     System.out.println("Copy sent");
+        // } catch (Exception e) {System.out.println("Broadcast failed.")}
+    }
+
     public void updateQueue() {} // for new leader mid runtime
 }

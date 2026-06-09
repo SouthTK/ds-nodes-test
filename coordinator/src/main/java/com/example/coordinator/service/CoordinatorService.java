@@ -27,7 +27,6 @@ public class CoordinatorService {
     }
 
     public String search(LLMRequest request) {
-        
         String id = UUID.randomUUID().toString(); 
         System.out.println("User Query: " + request.getUserQuery());
 
@@ -37,28 +36,15 @@ public class CoordinatorService {
         userRequest.setUserQuery(request.getUserQuery());
 
         storage.addRequest(id, userRequest);
-        // save to queue
+        storage.broadCastCopy(userRequest);
 
-        // send object to other coordinator nodes
-
-        // return id
-
-        // HttpEntity<LLMRequest> entity = new HttpEntity<>(request);
-        // try {
-
-        //     ResponseEntity<String> response =
-        //             restTemplate.exchange(
-        //                     "http://localhost:8081/llm",
-        //                     HttpMethod.POST,
-        //                     entity,
-        //                     new ParameterizedTypeReference<>() {}
-        //             );
-
-        //     // ingredientResults = response.getBody();
-        // } catch (Exception e) {
-        //     System.out.println("LLM Node unavailable");
-        //     return null;
-        // }
         return id;
+    }
+
+    public String get(String id) {
+        UserRequest request = storage.getRequest(id);
+        if (request == null) {return "Id does not exist.";}
+        if (request.getState().equals("done")) {return request.getResult();} 
+        else {return request.getState();}
     }
 }

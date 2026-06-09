@@ -38,10 +38,7 @@ public class SearchController {
 
     @GetMapping("/get")
     public String get(@RequestParam String id) {
-        UserRequest request = storage.getRequest(id);
-        if (request == null) {return "Id does not exist";}
-        if (request.getState().equals("done")) {return request.getResult();} 
-        else {return request.getState();}
+        return coordinatorService.get(id);
     }
 
     @PostMapping("/copy") 
