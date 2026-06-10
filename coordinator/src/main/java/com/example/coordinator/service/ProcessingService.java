@@ -18,22 +18,21 @@ public class ProcessingService {
 
     private final RestTemplate restTemplate;
     private final RequestStorage storage;
-    private final boolean isLeader;
+    private boolean isLeader;
 
     public ProcessingService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
         this.storage = storage;
         isLeader = true;
     }
+
+    public void setIsLeader(boolean input) {this.isLeader = input;}
+
     // only leader run this 
     @PostConstruct
     public void processingThread() {
         Thread checkingThread = new Thread(() -> {
             while (isLeader) { 
-                // try {
-                //     // String url = "http://localhost:8081/llm/status";
-                //     // String status = restTemplate.getForObject(url, String.class);
-                //     // System.out.println("Polled node status: " + status);
                 try {
                     String id = storage.getTask();
                     UserRequest request = storage.getRequest(id);
@@ -72,29 +71,6 @@ public class ProcessingService {
                 } catch (Exception e) {
                     System.out.println("The node cannot be called");
                 }
-                //     // read from queue
-                
-                //     // if state = new
-                //     //      call llm-node
-                //     //      save returned result back to storage
-                //     // (maybe move to another thread??)
-                //     // 
-                //     // if state = 3-queries
-                //     //      call db-node 
-                //     //      save returned result back to storage
-                //     //
-                //     // if state = list of results
-                //     //      call llm-node for final result
-                //     //      save returned result back to storage
-                //     //
-                    
-                // } catch (InterruptedException e) {
-                //     Thread.currentThread().interrupt();
-                //     break; // Stop loop if thread is shut down
-                // } catch (Exception e) {
-                //     System.out.println("Node check failed. Retrying in 10s...");
-                //     try { Thread.sleep(10000); } catch (Exception ignored) {}
-                // }
             }
         });
 

@@ -20,7 +20,6 @@ public class CoordinatorService {
     private final RestTemplate restTemplate;
     private final RequestStorage storage;
     
-
     public CoordinatorService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
         this.storage = storage;
@@ -46,5 +45,9 @@ public class CoordinatorService {
         if (request == null) {return "Id does not exist.";}
         if (request.getState().equals("done")) {return request.getResult();} 
         else {return request.getState();}
+    }
+
+    public boolean copy(UserRequest request) { 
+        return storage.storeRequest(request.getId(), request);
     }
 }

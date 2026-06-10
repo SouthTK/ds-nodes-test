@@ -15,23 +15,23 @@ public class RequestStorage {
     private final LinkedBlockingQueue<String> requestQueue = new LinkedBlockingQueue<>(100);
     private final ConcurrentHashMap<String, UserRequest> requestStatus = new ConcurrentHashMap<>();
 
-    public void addRequest(String id, UserRequest request) {
-        try {
-            requestStatus.put(id, request);
-            if (!request.getState().equals("done")) {
-                requestQueue.put(id);
-            }
-        } catch (Exception e) {}
-    }
-
-    public void storeRequest(String id, UserRequest request) {
-        try {
-            requestStatus.put(id, request);
-        } catch (Exception e) {}
-    }
-
     public UserRequest getRequest(String id) {
         return requestStatus.get(id);
+    }
+
+    public boolean storeRequest(String id, UserRequest request) {
+        try {
+            requestStatus.put(id, request);
+            return true;
+        } catch (Exception e) {return false;}
+    }
+
+    public boolean addRequest(String id, UserRequest request) {
+        try {
+            requestStatus.put(id, request);
+            if (!request.getState().equals("done")) {requestQueue.put(id);}
+            return true;
+        } catch (Exception e) {return false;}
     }
 
     public String getTask() {
@@ -53,5 +53,5 @@ public class RequestStorage {
         // } catch (Exception e) {System.out.println("Broadcast failed.")}
     }
 
-    public void updateQueue() {} // for new leader mid runtime
+    public void updateQueue() {requestQueue.addAll(requestStatus.keySet());}  // for new leader mid runtime
 }
