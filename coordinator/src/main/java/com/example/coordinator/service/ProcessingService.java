@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.shared.model.UserRequest;
+import com.example.shared.model.LLMRequest;
+
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.List;
 
 @Service
 public class ProcessingService {
@@ -19,6 +24,9 @@ public class ProcessingService {
     private final RestTemplate restTemplate;
     private final RequestStorage storage;
     private boolean isLeader;
+
+    private final List<String> llmNodes = new ArrayList<>();
+    //private final List<String> dbNodes = new ArrayList<>();
 
     public ProcessingService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
@@ -38,12 +46,16 @@ public class ProcessingService {
                     UserRequest request = storage.getRequest(id);
 
                     if (request.getState().equals("received")) {
+                        LLMRequest llmRequest = new LLMRequest();
+                        llmRequest.setUserQuery(request.getUserQuery());
+
                         // get the llm-node to process
                         // added returned result to request
+
                         Thread.sleep(5000); 
                         request.setState("formatted");
                         storage.addRequest(id, request);
-                        // send the copy to other nodes
+                        storage.broadCastCopy(request);
 
                     } else if (request.getState().equals("formatted")) {
                         // get the db nodes to process
@@ -51,7 +63,7 @@ public class ProcessingService {
                         Thread.sleep(5000); 
                         request.setState("unformatted result");
                         storage.addRequest(id, request);
-                        // send the copy to other nodes
+                        storage.broadCastCopy(request);
 
                     } else if (request.getState().equals("unformatted result")) {
                         // get the llm node to process
@@ -60,7 +72,7 @@ public class ProcessingService {
                         request.setState("done");
                         request.setResult("final result is here");
                         storage.storeRequest(id, request);
-                        // send the copy to other nodes
+                        storage.broadCastCopy(request);
                         
                     } else {
                         System.out.println("Something went very wrong");
@@ -77,4 +89,7 @@ public class ProcessingService {
         checkingThread.setDaemon(true); 
         checkingThread.start();
     }
+
+    // private void sendToLLMNode() {}
+    // private void sendToDBNode() {}
 }
