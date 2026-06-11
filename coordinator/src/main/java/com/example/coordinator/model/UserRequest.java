@@ -1,5 +1,7 @@
 package com.example.coordinator.model;
 
+import java.util.List;
+
 import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
 import com.example.shared.model.StatusState;
@@ -11,7 +13,7 @@ public class UserRequest {
     private String state;
     private String userQuery;
     private RecipeQuery recipeQuery;
-    private RecipeQueryResult recipeQueryResult;
+    private List<RecipeQueryResult> recipeQueryResults;
     private String result;
 
     public UserRequest() {}
@@ -28,8 +30,8 @@ public class UserRequest {
     public RecipeQuery getRecipeQuery() { return recipeQuery; }
     public void setRecipeQuery(RecipeQuery recipeQuery) { this.recipeQuery = recipeQuery; }
 
-    public RecipeQueryResult getRecipeQueryResult() { return recipeQueryResult; }
-    public void setRecipeQueryResult(RecipeQueryResult recipeQueryResult) { this.recipeQueryResult = recipeQueryResult; }
+    public List<RecipeQueryResult> getRecipeQueryResults() { return recipeQueryResults; }
+    public void setRecipeQueryResults(List<RecipeQueryResult> recipeQueryResults) { this.recipeQueryResults = recipeQueryResults; }
 
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }
