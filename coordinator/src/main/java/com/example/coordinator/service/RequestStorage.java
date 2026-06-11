@@ -5,8 +5,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-
-import com.example.shared.model.UserRequest;
+import com.example.coordinator.model.UserRequest;
 
 @Component // Declares this as a shared Singleton bean
 public class RequestStorage {
@@ -39,7 +38,7 @@ public class RequestStorage {
         } catch (Exception e) {return "error";}
     }
 
-    public void broadCastCopy(UserRequest request) {
+    public void broadCastCopy(UserRequest request) { // maybe move to
         // try {
         //     String url = "http://localhost:8090/copy";
 

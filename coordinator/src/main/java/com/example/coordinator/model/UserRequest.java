@@ -1,4 +1,4 @@
-package com.example.shared.model;
+package com.example.coordinator.model;
 
 import java.util.List;
 

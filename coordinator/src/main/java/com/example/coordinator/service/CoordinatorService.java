@@ -1,9 +1,5 @@
 package com.example.coordinator.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -11,8 +7,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import com.example.coordinator.model.UserRequest;
+
 import com.example.shared.model.LLMRequest;
-import com.example.shared.model.UserRequest;
+
 
 @Service
 public class CoordinatorService {

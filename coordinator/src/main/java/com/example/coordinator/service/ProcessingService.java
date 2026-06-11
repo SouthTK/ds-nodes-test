@@ -1,7 +1,5 @@
 package com.example.coordinator.service;
 
-import jakarta.annotation.PostConstruct;
-
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -11,7 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.example.shared.model.UserRequest;
+import com.example.coordinator.model.UserRequest;
+
 import com.example.shared.model.LLMRequest;
 
 import java.util.ArrayList;
@@ -31,13 +30,11 @@ public class ProcessingService {
     public ProcessingService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
         this.storage = storage;
-        isLeader = true;
+        isLeader = false;
     }
 
     public void setIsLeader(boolean input) {this.isLeader = input;}
 
-    // only leader run this 
-    @PostConstruct
     public void processingThread() {
         Thread checkingThread = new Thread(() -> {
             while (isLeader) { 
