@@ -53,7 +53,13 @@ public class SearchController {
         return true;
     }
 
-        @PostMapping("/ping") 
+    @PostMapping("/apply") 
+    public boolean apply(@RequestParam String id, @RequestParam String type) { 
+        //return processingService.apply(request);
+        return true;
+    }
+
+    @PostMapping("/ping") 
     public boolean ping(@RequestParam String id, @RequestParam int term) { 
         return consensus.ping(id, term);
     }
@@ -61,5 +67,11 @@ public class SearchController {
     @PostMapping("/vote") 
     public boolean vote(@RequestBody VoteRequest request) { 
         return consensus.vote(request);
+    }
+
+    @PostMapping("/join") 
+    public boolean join(@RequestParam String id) { 
+        //return consensus.join(request);// only leader
+        return true;
     }
 }

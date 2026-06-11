@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import org.springframework.web.client.RestTemplate;
+
 import org.springframework.web.util.UriComponentsBuilder;
 
 import org.springframework.http.HttpEntity;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.example.coordinator.model.VoteRequest;
+import com.example.coordinator.model.UserRequest;
 
 @Component 
 public class ConsensusService {
@@ -49,6 +51,7 @@ public class ConsensusService {
             if (candidateRequestCount >= 3 && !this.voted) {
                 this.voted = true;
                 this.nodeStatus = "follower";
+                processingService.setIsLeader(false);
                 return true;
                 } 
             }
@@ -59,10 +62,18 @@ public class ConsensusService {
         if (term >= this.term) {
             this.leaderId = id;
             this.nodeStatus = "follower";
+            processingService.setIsLeader(false);
             this.term = term;
             return true;
         } else {return false;}
     }
+
+    // public boolean join(String id) {
+            // if (nodeStatus.equals("leader")) {
+            //     nodesList.add(id);
+            //     add the nodesList of storage
+            // }
+    // }
 
     @Scheduled(fixedDelay = 1000)
     public void pingingThread() {
@@ -94,6 +105,7 @@ public class ConsensusService {
             if (this.leaderId != null) {this.leaderId = null;}
             else {
                 this.nodeStatus = "candidate";
+                processingService.setIsLeader(false);
                 while (this.nodeStatus.equals("candidate")) {
                     try {
                         long randomDelay = ThreadLocalRandom.current().nextLong(1000, 2000 + 1);
@@ -127,7 +139,7 @@ public class ConsensusService {
                         this.nodeStatus = "leader";
                         processingService.setIsLeader(true);
                         processingService.processingThread();
-                        storage.updateQueue();
+                        processingService.updateQueue();
                         System.out.println("Won");
                     }
                     else {System.out.println("Lost");}

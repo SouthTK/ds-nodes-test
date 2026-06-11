@@ -2,19 +2,40 @@ package com.example.coordinator.service;
 
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import org.springframework.web.client.RestTemplate;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
 import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import com.example.coordinator.model.UserRequest;
 
-@Component // Declares this as a shared Singleton bean
+@Component 
 public class RequestStorage {
 
-    private final LinkedBlockingQueue<String> requestQueue = new LinkedBlockingQueue<>(100);
-    private final ConcurrentHashMap<String, UserRequest> requestStatus = new ConcurrentHashMap<>();
+    private final RestTemplate restTemplate;
+    private final List<String> nodesList; //maintain same list with consensus
+    private final ConcurrentHashMap<String, UserRequest> requestStatus;
+
+    public RequestStorage(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+        this.nodesList = new ArrayList<>();
+        this.requestStatus = new ConcurrentHashMap<>();
+    }
+    // method to change nodelist, control by consensus service
 
     public UserRequest getRequest(String id) {
         return requestStatus.get(id);
+    }
+
+    public Set<String> getRequestList() {
+        return requestStatus.keySet();
     }
 
     public boolean storeRequest(String id, UserRequest request) {
@@ -24,32 +45,17 @@ public class RequestStorage {
         } catch (Exception e) {return false;}
     }
 
-    public boolean addRequest(String id, UserRequest request) {
-        try {
-            requestStatus.put(id, request);
-            if (!request.getState().equals("done")) {requestQueue.put(id);}
-            return true;
-        } catch (Exception e) {return false;}
+    public void broadCastCopy(UserRequest request) { // maybe move to somewhere else?
+        // only leaders
+        for (String node : nodesList) {
+            try {
+                String targetUrl = "http://localhost:" + node + "/copy";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<UserRequest> entity = new HttpEntity<>(request, headers);
+                Boolean result = restTemplate.postForObject(targetUrl, entity, Boolean.class);
+                if (result) {System.out.println("Broadcast request done.");}
+            } catch (Exception e) {System.out.println("Broadcast request failed.");}
+        }
     }
-
-    public String getTask() {
-        try {
-            return requestQueue.take();
-        } catch (Exception e) {return "error";}
-    }
-
-    public void broadCastCopy(UserRequest request) { // maybe move to
-        // try {
-        //     String url = "http://localhost:8090/copy";
-
-        //     HttpHeaders headers = new HttpHeaders();
-        //     headers.setContentType(MediaType.APPLICATION_JSON);
-
-        //     HttpEntity<UserRequest> requestEntity = new HttpEntity<>(request, headers);
-        //     Boolean success = restTemplate.postForObject(url, requestEntity, Boolean.class);
-        //     System.out.println("Copy sent");
-        // } catch (Exception e) {System.out.println("Broadcast failed.")}
-    }
-
-    public void updateQueue() {requestQueue.addAll(requestStatus.keySet());}  // for new leader mid runtime
 }

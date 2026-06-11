@@ -20,26 +20,34 @@ import com.example.shared.model.LLMRequest;
 public class CoordinatorService {
 
     private final RestTemplate restTemplate;
+    private final ProcessingService processingService;
     private final RequestStorage storage;
     
-    public CoordinatorService(RestTemplate restTemplate, RequestStorage storage) {
+    public CoordinatorService(RestTemplate restTemplate, 
+            RequestStorage storage, ProcessingService processingService) {
         this.restTemplate = restTemplate;
+        this.processingService = processingService;
         this.storage = storage;
     }
 
-    public String search(LLMRequest request) {
-        String id = UUID.randomUUID().toString(); 
-        System.out.println("User Query: " + request.getUserQuery());
+    public String search(LLMRequest request) { 
+        if (processingService.getIsLeader()) {
+            String id = UUID.randomUUID().toString(); 
+            System.out.println("User Query: " + request.getUserQuery());
 
-        UserRequest userRequest = new UserRequest();
-        userRequest.setId(id);
-        userRequest.setState("received");
-        userRequest.setUserQuery(request.getUserQuery());
+            UserRequest userRequest = new UserRequest();
+            userRequest.setId(id);
+            userRequest.setState("received");
+            userRequest.setUserQuery(request.getUserQuery());
 
-        storage.addRequest(id, userRequest);
-        storage.broadCastCopy(userRequest);
+            storage.storeRequest(id, userRequest);
+            processingService.addToQueue(id);
+            storage.broadCastCopy(userRequest);
 
-        return id;
+            return id;
+        } else {
+            return "Rejected, not leading.";
+        }
     }
 
     public String get(String id) {
