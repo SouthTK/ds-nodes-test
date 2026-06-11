@@ -47,7 +47,7 @@ public class SearchController {
         return coordinatorService.get(id);
     } 
 
-    @GetMapping("/gettest")
+    @GetMapping("/gettest") // just for test TO DO: delete
     public UserRequest getTest(@RequestParam String id) {
         return coordinatorService.getTest(id);
     }
@@ -60,8 +60,7 @@ public class SearchController {
 
     @PostMapping("/apply") 
     public boolean apply(@RequestParam String id, @RequestParam String type) { 
-        //return processingService.apply(request);
-        return true;
+        return processingService.apply(id, type);
     }
 
     @PostMapping("/ping") 
@@ -74,9 +73,8 @@ public class SearchController {
         return consensus.vote(request);
     }
 
-    @PostMapping("/join") 
+    @PostMapping("/join") // return type of an object contains all data to sync??
     public boolean join(@RequestParam String id) { 
-        //return consensus.join(request);// only leader
-        return true;
+        return consensus.join(id);
     }
 }

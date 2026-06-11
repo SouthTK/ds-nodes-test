@@ -10,9 +10,9 @@ import org.springframework.http.MediaType;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 import com.example.coordinator.model.UserRequest;
 
@@ -20,12 +20,12 @@ import com.example.coordinator.model.UserRequest;
 public class RequestStorage {
 
     private final RestTemplate restTemplate;
-    private final List<String> nodesList; //maintain same list with consensus
+    private final HashSet<String> nodesList;
     private final ConcurrentHashMap<String, UserRequest> requestStatus;
 
     public RequestStorage(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        this.nodesList = new ArrayList<>();
+        this.nodesList = new HashSet<>();
         this.requestStatus = new ConcurrentHashMap<>();
     }
     // method to change nodelist, control by consensus service
@@ -49,7 +49,7 @@ public class RequestStorage {
         requestStatus.remove(id);
     }
 
-    public void broadCastCopy(UserRequest request) { // maybe move to somewhere else?
+    public void broadCastCopy(UserRequest request) { 
         // only leaders
         for (String node : nodesList) {
             try {

@@ -12,8 +12,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -26,7 +25,8 @@ public class ConsensusService {
     private final ProcessingService processingService;
     private final RequestStorage storage;
 
-    private final List<String> nodesList = new ArrayList<>(); //List.of("8081", "8082", "8083")
+    private final HashSet<String> nodesList = new HashSet<>();
+
     private String nodeId = "8080"; // do I need to sync???
     private boolean voted = false;
     
@@ -68,12 +68,21 @@ public class ConsensusService {
         } else {return false;}
     }
 
-    // public boolean join(String id) {
-            // if (nodeStatus.equals("leader")) {
-            //     nodesList.add(id);
-            //     add the nodesList of storage
-            // }
-    // }
+    public boolean join(String id) {
+        if (nodeStatus.equals("leader")) {
+            // try ping the node first??
+            nodesList.add(id);
+            //add the nodesList of storage
+            // calling join of other nodes
+            // send back node list to the new join
+            // return an object contains all the needed data??
+        } else {
+            // try ping the node first??
+            nodesList.add(id);
+            //add the nodesList of storage
+        }
+        return true;
+    }
 
     @Scheduled(fixedDelay = 1000)
     public void pingingThread() {

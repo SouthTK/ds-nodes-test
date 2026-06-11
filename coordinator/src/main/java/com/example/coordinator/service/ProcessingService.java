@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.List;
+import java.util.HashSet;
 
 @Service
 public class ProcessingService {
@@ -33,8 +34,8 @@ public class ProcessingService {
     private final RequestStorage storage;
     private boolean isLeader;
 
-    private final List<String> llmNodes = new ArrayList<>();
-    private final List<String> dbNodes = new ArrayList<>();
+    private final HashSet<String> llmNodes = new HashSet<>();
+    private final HashSet<String> dbNodes = new HashSet<>();
 
     private final LinkedBlockingQueue<String> requestQueue;
 
@@ -54,10 +55,11 @@ public class ProcessingService {
         return this.isLeader;
     }
 
-    public void apply() {
+    public boolean apply(String id, String type) {
         // if nodes is llm, add to llmNodes
         // if nodes is db, add to dbNodes
         // if this node is leader, apply to other nodes too.
+        return true;
     }
 
     public void updateQueue() { 
@@ -150,7 +152,7 @@ public class ProcessingService {
             int attempt = 0;
             do {
                 attempt = attempt + 1;
-                String node = llmNodes.get(new Random().nextInt(numberOfNodes));
+                String node = (String) llmNodes.toArray()[new Random().nextInt(numberOfNodes)];
                 try {
                     String targetUrl = "http://localhost:" + node + "/llm";
                     HttpHeaders headers = new HttpHeaders();
@@ -171,8 +173,7 @@ public class ProcessingService {
         int numberOfNodes = dbNodes.size();
         List<RecipeQueryResult> results = new ArrayList<>();
         if (numberOfNodes >= 0)  {
-            for (int i = 0; i < numberOfNodes; i++) {
-                String node = dbNodes.get(i);
+            for (String node : dbNodes) {
                 try {
                     String targetUrl = "http://localhost:" + node + "/recipes/search";
                     HttpHeaders headers = new HttpHeaders();
