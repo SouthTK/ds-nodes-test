@@ -1,13 +1,17 @@
 package com.example.coordinator.model;
 
+import com.example.shared.model.RecipeQuery;
+import com.example.shared.model.RecipeQueryResult;
+import com.example.shared.model.StatusState;
+
 import java.util.List;
 
 public class UserRequest {
     private String id;
     private String state;
     private String userQuery;
-    private String queries_for_db;
-    private String list_of_result;
+    private RecipeQuery recipeQuery;
+    private RecipeQueryResult recipeQueryResult;
     private String result;
 
     public UserRequest() {}
@@ -21,11 +25,11 @@ public class UserRequest {
     public String getUserQuery() { return userQuery; }
     public void setUserQuery(String userQuery) { this.userQuery = userQuery; }
 
-    public String getQueries_for_db() { return queries_for_db; }
-    public void setQueries_for_db(String queries_for_db) { this.queries_for_db = queries_for_db; }
+    public RecipeQuery getRecipeQuery() { return recipeQuery; }
+    public void setRecipeQuery(RecipeQuery recipeQuery) { this.recipeQuery = recipeQuery; }
 
-    public String getList_of_result() { return list_of_result; }
-    public void setList_of_result(String list_of_result) { this.list_of_result = list_of_result; }
+    public RecipeQueryResult getRecipeQueryResult() { return recipeQueryResult; }
+    public void setRecipeQueryResult(RecipeQueryResult recipeQueryResult) { this.recipeQueryResult = recipeQueryResult; }
 
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }

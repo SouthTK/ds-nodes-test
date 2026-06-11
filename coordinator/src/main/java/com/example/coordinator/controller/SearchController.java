@@ -45,6 +45,11 @@ public class SearchController {
     @GetMapping("/get")
     public String get(@RequestParam String id) {
         return coordinatorService.get(id);
+    } 
+
+    @GetMapping("/gettest")
+    public UserRequest getTest(@RequestParam String id) {
+        return coordinatorService.getTest(id);
     }
 
     @PostMapping("/copy") 
