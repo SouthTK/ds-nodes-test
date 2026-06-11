@@ -3,15 +3,22 @@ package com.example.coordinator.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.core.ParameterizedTypeReference;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 
 import com.example.coordinator.model.UserRequest;
 
 import com.example.shared.model.LLMRequest;
+import com.example.shared.model.RecipeQuery;
+import com.example.shared.model.RecipeQueryResult;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -27,7 +34,7 @@ public class ProcessingService {
     private boolean isLeader;
 
     private final List<String> llmNodes = new ArrayList<>();
-    //private final List<String> dbNodes = new ArrayList<>();
+    private final List<String> dbNodes = new ArrayList<>();
 
     private final LinkedBlockingQueue<String> requestQueue;
 
@@ -75,20 +82,33 @@ public class ProcessingService {
                     if (request.getState().equals("received")) {
                         LLMRequest llmRequest = new LLMRequest();
                         llmRequest.setUserQuery(request.getUserQuery());
+                        RecipeQuery result = sendToLLMNode(llmRequest);
 
-                        // get the llm-node to process
-                        // added returned result to request
-
-                        Thread.sleep(5000); 
-                        request.setState("formatted");
-                        storage.storeRequest(id, request);
-                        this.addToQueue(id);
-                        storage.broadCastCopy(request);
+                        if (result != null) {
+                            request.setState("formatted");
+                            request.setRecipeQuery(result);
+                            storage.storeRequest(id, request);
+                            this.addToQueue(id);
+                            storage.broadCastCopy(request);
+                        } else {
+                            System.out.println("No result, request failed.");
+                            storage.deleteRequest(id);
+                        }
 
                     } else if (request.getState().equals("formatted")) {
+                        RecipeQuery recipeQuery = request.getRecipeQuery();
+                        List<RecipeQueryResult> result = sendToDBNode(recipeQuery);
 
-                        // get the db nodes to process
-                        // added all the new result back to request
+                        if (result != null) {
+                            request.setState("unformatted results");
+                            request.setRecipeQueryResults(result);
+                            storage.storeRequest(id, request);
+                            this.addToQueue(id);
+                            storage.broadCastCopy(request);
+                        } else {
+                            System.out.println("No result, request failed.");
+                            storage.deleteRequest(id);
+                        }
 
                         Thread.sleep(5000); 
                         request.setState("unformatted result");
@@ -115,6 +135,7 @@ public class ProcessingService {
                     System.err.println("The sleep was interrupted.");
                 } catch (Exception e) {
                     System.out.println("The node cannot be called");
+                    e.printStackTrace();
                 }
             }
         });
@@ -123,9 +144,9 @@ public class ProcessingService {
         checkingThread.start();
     }
 
-    private void sendToLLMNode(LLMRequest llmRequest) {
+    private RecipeQuery sendToLLMNode(LLMRequest llmRequest) {
         int numberOfNodes = llmNodes.size();
-        if (numberOfNodes >= 0)  {
+        if (numberOfNodes > 0)  {
             int attempt = 0;
             do {
                 attempt = attempt + 1;
@@ -136,13 +157,42 @@ public class ProcessingService {
                     headers.setContentType(MediaType.APPLICATION_JSON);
                     HttpEntity<LLMRequest> entity = new HttpEntity<>(llmRequest, headers);
 
-                    // TO DO: fix below
-                    //success = restTemplate.postForObject(targetUrl, entity, Boolean.class);
-                    // if success, return result.
+                    return restTemplate.postForObject(targetUrl, entity, RecipeQuery.class);
                 } catch (Exception e) {System.out.println("Calling llm service failed.");}
             } while (attempt < 5);
-        } else {System.out.println("No llm nodes found");}
+            return null;
+        } else {
+            System.out.println("No llm nodes found");
+            return null;
+        }
     }
     
-    // private void sendToDBNode() {}
+    private List<RecipeQueryResult> sendToDBNode(RecipeQuery recipeQuery) {
+        int numberOfNodes = dbNodes.size();
+        List<RecipeQueryResult> results = new ArrayList<>();
+        if (numberOfNodes >= 0)  {
+            for (int i = 0; i < numberOfNodes; i++) {
+                String node = dbNodes.get(i);
+                try {
+                    String targetUrl = "http://localhost:" + node + "/recipes/search";
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<RecipeQuery> entity = new HttpEntity<>(recipeQuery, headers);
+
+                    ResponseEntity<List<RecipeQueryResult>> response = restTemplate.exchange(
+                            targetUrl, HttpMethod.POST, entity,
+                            new ParameterizedTypeReference<List<RecipeQueryResult>>() {}
+                    );
+
+                    if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                        results.addAll(response.getBody());
+                    }
+                } catch (Exception e) {System.out.println("Calling RECIPE NODE service failed.");}
+            }
+            return results;
+        } else {
+            System.out.println("No recipe nodes found");
+            return null;
+        }
+    }
 }

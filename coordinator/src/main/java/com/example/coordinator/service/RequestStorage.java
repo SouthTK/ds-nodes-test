@@ -45,6 +45,10 @@ public class RequestStorage {
         } catch (Exception e) {return false;}
     }
 
+    public void deleteRequest(String id) {
+        requestStatus.remove(id);
+    }
+
     public void broadCastCopy(UserRequest request) { // maybe move to somewhere else?
         // only leaders
         for (String node : nodesList) {
