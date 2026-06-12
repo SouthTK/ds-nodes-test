@@ -59,6 +59,7 @@ public class ProcessingService {
         // if nodes is llm, add to llmNodes
         // if nodes is db, add to dbNodes
         // if this node is leader, apply to other nodes too.
+        // how to know other nodes( storage or consensus)
         return true;
     }
 

@@ -70,18 +70,42 @@ public class ConsensusService {
 
     public boolean join(String id) {
         if (nodeStatus.equals("leader")) {
-            // try ping the node first??
-            nodesList.add(id);
-            //add the nodesList of storage
-            // calling join of other nodes
-            // send back node list to the new join
-            // return an object contains all the needed data??
+            Boolean validity = false;
+            try {
+                String targetUrl = "http://localhost:" + id + "/ping";
+                String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
+                        .queryParam("id", nodeId)
+                        .queryParam("term", this.term)
+                        .encode()
+                        .toUriString();
+
+                validity = restTemplate.postForObject(urlTemplate, null, Boolean.class);
+            } catch (Exception e) {System.out.println("Ping failed.");}
+
+            if (validity) {
+                nodesList.add(id);
+                storage.addNode(id);
+
+                for (String node : nodesList) {
+                    try {
+                    String targetUrl = "http://localhost:" + node + "/join";
+                    String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
+                            .queryParam("id", id)
+                            .encode()
+                            .toUriString();
+                    } catch (Exception e) {System.out.println("Ping failed.");}
+                }
+                return true;
+                // send back node list to the new join
+                // return an object contains all the needed data??
+            }
+            return false;
+        
         } else {
-            // try ping the node first??
             nodesList.add(id);
-            //add the nodesList of storage
+            storage.addNode(id);
         }
-        return true;
+        return false;
     }
 
     @Scheduled(fixedDelay = 1000)

@@ -62,4 +62,8 @@ public class RequestStorage {
             } catch (Exception e) {System.out.println("Broadcast request failed.");}
         }
     }
+
+    public void addNode(String id) {
+        nodesList.add(id);
+    }
 }
