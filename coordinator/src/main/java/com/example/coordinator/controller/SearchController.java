@@ -58,11 +58,6 @@ public class SearchController {
         return true;
     }
 
-    @PostMapping("/apply") 
-    public boolean apply(@RequestParam String id, @RequestParam String type) { 
-        return processingService.apply(id, type);
-    }
-
     @PostMapping("/ping") 
     public boolean ping(@RequestParam String id, @RequestParam int term) { 
         return consensus.ping(id, term);
@@ -76,5 +71,10 @@ public class SearchController {
     @PostMapping("/join") // return type of an object contains all data to sync??
     public boolean join(@RequestParam String id) { 
         return consensus.join(id);
+    }
+
+    @PostMapping("/apply") 
+    public boolean apply(@RequestParam String id, @RequestParam String type) { 
+        return consensus.apply(id, type);
     }
 }

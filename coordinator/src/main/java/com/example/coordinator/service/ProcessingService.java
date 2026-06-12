@@ -56,6 +56,11 @@ public class ProcessingService {
     }
 
     public boolean apply(String id, String type) {
+        if (type.equals("llm")) {
+            llmNodes.add(id);
+        } else if (type.equals("db")) {
+            dbNodes.add(id);
+        }
         // if nodes is llm, add to llmNodes
         // if nodes is db, add to dbNodes
         // if this node is leader, apply to other nodes too.

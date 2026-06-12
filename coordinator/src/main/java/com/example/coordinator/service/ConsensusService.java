@@ -108,6 +108,26 @@ public class ConsensusService {
         return false;
     }
 
+    public boolean apply(String id, String type) {
+        if (nodeStatus.equals("leader")) {
+            // try service first??
+            processingService.apply(id, type);
+            for (String node : nodesList) {
+                try {
+                String targetUrl = "http://localhost:" + node + "/apply";
+                String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
+                        .queryParam("id", id)
+                        .queryParam("type", type)
+                        .encode()
+                        .toUriString();
+                } catch (Exception e) {System.out.println("Broadcasting new worker nodes failed.");}
+            }
+        } else {
+            processingService.apply(id, type);
+        }
+        return false;
+    }
+
     @Scheduled(fixedDelay = 1000)
     public void pingingThread() {
         if (nodeStatus.equals("leader")) {
