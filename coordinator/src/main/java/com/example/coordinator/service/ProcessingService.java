@@ -57,8 +57,16 @@ public class ProcessingService {
         return new ArrayList<>(llmNodes);
     }
 
+    public void addLlmNodes(List<String> list) {
+        this.llmNodes.addAll(list);
+    }
+
     public List<String> getDbNodes() {
         return new ArrayList<>(dbNodes);
+    }
+
+    public void addDbNodes(List<String> list) {
+        this.dbNodes.addAll(list);
     }
 
     public boolean apply(String id, String type) {
@@ -67,10 +75,6 @@ public class ProcessingService {
         } else if (type.equals("db")) {
             dbNodes.add(id);
         }
-        // if nodes is llm, add to llmNodes
-        // if nodes is db, add to dbNodes
-        // if this node is leader, apply to other nodes too.
-        // how to know other nodes( storage or consensus)
         return true;
     }
 

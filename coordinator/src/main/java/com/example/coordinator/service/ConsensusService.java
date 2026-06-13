@@ -3,18 +3,21 @@ package com.example.coordinator.service;
 import org.springframework.stereotype.Component;
 
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.web.client.RestTemplate;
-
 import org.springframework.web.util.UriComponentsBuilder;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import jakarta.annotation.PostConstruct;
+
 import java.util.List;
 import java.util.HashSet;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -36,6 +39,9 @@ public class ConsensusService {
     public String nodeStatus = "follower"; // do I need to sync???
     public String leaderId = null; // do I need to sync???
     public int term = 0;
+
+    @Value("${join_existed:false}")
+    boolean joinExisted;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -98,6 +104,7 @@ public class ConsensusService {
                             .queryParam("id", id)
                             .encode()
                             .toUriString();
+                    restTemplate.postForObject(urlTemplate, null, Boolean.class);
                     } catch (Exception e) {System.out.println("Ping failed.");}
                 }
                 List coordinators = new ArrayList<>(nodesList);
@@ -116,6 +123,35 @@ public class ConsensusService {
             storage.addNode(id);
         }
         return null;
+    }
+
+    @PostConstruct
+    public boolean follow() {
+        String id = new Scanner(System.in).nextLine();
+
+        try {
+            String targetUrl = "http://localhost:" + id + "/join";
+            String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
+                    .queryParam("id", nodeId)
+                    .encode()
+                    .toUriString();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            NodesInfo info = restTemplate.postForObject(urlTemplate, entity, NodesInfo.class);
+            
+            if (info == null) {
+                return false;
+            } else {
+                nodesList.addAll(info.getCoordinatorNodes());
+                processingService.addLlmNodes(info.getLlmNodes());
+                processingService.addDbNodes(info.getRecipeNodes());
+                return true;
+            }
+        } catch (Exception e) {
+            System.out.println("Following nodes failed.");
+            return false;
+        }
     }
 
     public boolean apply(String id, String type) {

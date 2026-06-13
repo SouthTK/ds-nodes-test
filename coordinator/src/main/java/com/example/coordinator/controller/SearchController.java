@@ -69,7 +69,7 @@ public class SearchController {
         return consensus.vote(request);
     }
 
-    @PostMapping("/join") // return type of an object contains all data to sync??
+    @PostMapping("/join") 
     public NodesInfo join(@RequestParam String id) { 
         return consensus.join(id);
     }
