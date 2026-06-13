@@ -107,6 +107,7 @@ public class ConsensusService {
                 }
                 List coordinators = new ArrayList<>(nodesList);
                 coordinators.add(nodeId);
+                coordinators.remove(id);
 
                 NodesInfo info = new NodesInfo();
                 info.setCoordinatorNodes(coordinators);
@@ -164,6 +165,7 @@ public class ConsensusService {
                         .queryParam("type", type)
                         .encode()
                         .toUriString();
+                return restTemplate.postForObject(urlTemplate, null, Boolean.class);
                 } catch (Exception e) {System.out.println("Broadcasting new worker nodes failed.");}
             }
         } else {
