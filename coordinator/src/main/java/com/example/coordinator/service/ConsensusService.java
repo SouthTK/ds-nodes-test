@@ -1,7 +1,7 @@
 package com.example.coordinator.service;
 
 import org.springframework.stereotype.Component;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import org.springframework.web.client.RestTemplate;
@@ -28,19 +28,24 @@ public class ConsensusService {
     private final RequestStorage storage;
 
     private final HashSet<String> nodesList = new HashSet<>();
-
-    private String nodeId = "8080"; // do I need to sync???
-    private boolean voted = false;
+    @Value("${server.port:8080}")
+    private String nodeId; // do I need to sync???
+    private boolean voted;
     
-    public String nodeStatus = "follower"; // do I need to sync???
-    public String leaderId = null; // do I need to sync???
-    public int term = 0;
+    public String nodeStatus; // do I need to sync???
+    public String leaderId; // do I need to sync???
+    public int term;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
         this.restTemplate = restTemplate;
         this.processingService = processingService;
         this.storage = storage;
+
+        this.voted = false;
+        this.nodeStatus = "follower";
+        this.leaderId = null;
+        this.term = 0;
         }
 
     public boolean vote(VoteRequest request) { 
