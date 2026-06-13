@@ -1,7 +1,6 @@
 package com.example.coordinator.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -10,7 +9,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -108,7 +106,7 @@ public class ProcessingService {
                             storage.broadCastCopy(request);
                         } else {
                             System.out.println("No result, request failed.");
-                            storage.deleteRequest(id);
+                            //storage.deleteRequest(id);
                         }
 
                     } else if (request.getState().equals("formatted")) {
@@ -123,10 +121,9 @@ public class ProcessingService {
                             storage.broadCastCopy(request);
                         } else {
                             System.out.println("No result, request failed.");
-                            storage.deleteRequest(id);
+                            //storage.deleteRequest(id);
                         }
 
-                        Thread.sleep(5000); 
                         request.setState("unformatted result");
                         storage.storeRequest(id, request);
                         this.addToQueue(id);

@@ -1,6 +1,7 @@
 package com.example.coordinator.service;
 
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import org.springframework.web.client.RestTemplate;
 
@@ -13,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+
+import java.time.LocalDateTime;
 
 import com.example.coordinator.model.UserRequest;
 
@@ -65,5 +68,14 @@ public class RequestStorage {
 
     public void addNode(String id) {
         nodesList.add(id);
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    private void cleanUp() {
+        LocalDateTime now = LocalDateTime.now(); 
+        requestStatus.values().removeIf(request -> request.getTtl().isBefore(now));
+
+    //     requestStatus.values().removeIf(request -> 
+    // request.getTtl() != null && request.getTtl().isBefore(now)
     }
 }

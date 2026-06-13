@@ -1,6 +1,7 @@
 package com.example.coordinator.model;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
@@ -9,6 +10,7 @@ import com.example.shared.model.StatusState;
 public class UserRequest {
     private String id;
     private String state;
+    private LocalDateTime ttl;
     private String userQuery;
     private RecipeQuery recipeQuery;
     private List<RecipeQueryResult> recipeQueryResults;
@@ -21,6 +23,9 @@ public class UserRequest {
 
     public String getState() { return state; }
     public void setState(String state) { this.state = state; }
+
+    public LocalDateTime getTtl() { return ttl; }
+    public void setTtl(LocalDateTime ttl) { this.ttl = ttl; }
 
     public String getUserQuery() { return userQuery; }
     public void setUserQuery(String userQuery) { this.userQuery = userQuery; }

@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import java.time.LocalDateTime;
+
 import com.example.coordinator.model.UserRequest;
 
 import com.example.shared.model.LLMRequest;
@@ -39,6 +41,7 @@ public class CoordinatorService {
             userRequest.setId(id);
             userRequest.setState("received");
             userRequest.setUserQuery(request.getUserQuery());
+            userRequest.setTtl(LocalDateTime.now().plusSeconds(30));
 
             storage.storeRequest(id, userRequest);
             processingService.addToQueue(id);
