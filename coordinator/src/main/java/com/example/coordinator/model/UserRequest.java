@@ -6,8 +6,6 @@ import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
 import com.example.shared.model.StatusState;
 
-import java.util.List;
-
 public class UserRequest {
     private String id;
     private String state;

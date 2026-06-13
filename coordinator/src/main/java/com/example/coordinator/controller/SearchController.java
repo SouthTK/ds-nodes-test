@@ -16,6 +16,7 @@ import com.example.coordinator.service.RequestStorage;
 
 import com.example.coordinator.model.VoteRequest;
 import com.example.coordinator.model.UserRequest;
+import com.example.coordinator.model.NodesInfo;
 
 import com.example.shared.model.LLMRequest;
 
@@ -69,7 +70,7 @@ public class SearchController {
     }
 
     @PostMapping("/join") // return type of an object contains all data to sync??
-    public boolean join(@RequestParam String id) { 
+    public NodesInfo join(@RequestParam String id) { 
         return consensus.join(id);
     }
 

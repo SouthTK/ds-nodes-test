@@ -55,6 +55,14 @@ public class ProcessingService {
         return this.isLeader;
     }
 
+    public List<String> getLlmNodes() {
+        return new ArrayList<>(llmNodes);
+    }
+
+    public List<String> getDbNodes() {
+        return new ArrayList<>(dbNodes);
+    }
+
     public boolean apply(String id, String type) {
         if (type.equals("llm")) {
             llmNodes.add(id);

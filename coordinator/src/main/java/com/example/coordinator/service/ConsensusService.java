@@ -12,12 +12,15 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import java.util.List;
 import java.util.HashSet;
+import java.util.ArrayList;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.example.coordinator.model.VoteRequest;
 import com.example.coordinator.model.UserRequest;
+import com.example.coordinator.model.NodesInfo;
 
 @Component 
 public class ConsensusService {
@@ -42,7 +45,9 @@ public class ConsensusService {
         }
 
     public boolean vote(VoteRequest request) { 
-        if (this.term <= request.getTerm()) {
+        int requestCount = storage.getRequestList().size();
+
+        if (this.term <= request.getTerm() && requestCount <= request.getRequestCount()) {
             if(this.term < request.getTerm()) {
                 this.term += 1;
                 this.voted = false;
@@ -68,7 +73,7 @@ public class ConsensusService {
         } else {return false;}
     }
 
-    public boolean join(String id) {
+    public NodesInfo join(String id) {
         if (nodeStatus.equals("leader")) {
             Boolean validity = false;
             try {
@@ -95,17 +100,22 @@ public class ConsensusService {
                             .toUriString();
                     } catch (Exception e) {System.out.println("Ping failed.");}
                 }
-                return true;
-                // send back node list to the new join
-                // return an object contains all the needed data??
+                List coordinators = new ArrayList<>(nodesList);
+                coordinators.add(nodeId);
+
+                NodesInfo info = new NodesInfo();
+                info.setCoordinatorNodes(coordinators);
+                info.setLlmNodes(processingService.getLlmNodes());
+                info.setRecipeNodes(processingService.getDbNodes());
+                return info;
             }
-            return false;
+            return null;
         
         } else {
             nodesList.add(id);
             storage.addNode(id);
         }
-        return false;
+        return null;
     }
 
     public boolean apply(String id, String type) {
@@ -170,7 +180,9 @@ public class ConsensusService {
                     this.term = term + 1;
                     this.voted = false;
                     int vote = 1;
+
                     VoteRequest request = new VoteRequest();
+                    request.setRequestCount(storage.getRequestList().size());
                     request.setCandidateId(this.nodeId);
                     request.setRequestCount(4);
                     request.setTerm(this.term);
