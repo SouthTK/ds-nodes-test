@@ -31,7 +31,6 @@ public class RequestStorage {
         this.nodesList = new HashSet<>();
         this.requestStatus = new ConcurrentHashMap<>();
     }
-    // method to change nodelist, control by consensus service
 
     public UserRequest getRequest(String id) {
         return requestStatus.get(id);
@@ -68,6 +67,11 @@ public class RequestStorage {
 
     public void addNode(String id) {
         nodesList.add(id);
+    }
+
+    public void setNode(List<String> list) {
+        this.nodesList.clear();
+        this.nodesList.addAll(list);
     }
 
     @Scheduled(fixedDelay = 5000)

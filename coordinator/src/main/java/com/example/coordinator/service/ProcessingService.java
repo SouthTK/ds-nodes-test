@@ -57,7 +57,8 @@ public class ProcessingService {
         return new ArrayList<>(llmNodes);
     }
 
-    public void addLlmNodes(List<String> list) {
+    public void setLlmNodes(List<String> list) {
+        this.llmNodes.clear();
         this.llmNodes.addAll(list);
     }
 
@@ -65,7 +66,8 @@ public class ProcessingService {
         return new ArrayList<>(dbNodes);
     }
 
-    public void addDbNodes(List<String> list) {
+    public void setDbNodes(List<String> list) {
+        this.dbNodes.clear();
         this.dbNodes.addAll(list);
     }
 

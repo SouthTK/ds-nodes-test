@@ -78,4 +78,9 @@ public class SearchController {
     public boolean apply(@RequestParam String id, @RequestParam String type) { 
         return consensus.apply(id, type);
     }
+
+    @PostMapping("/follow") 
+    public boolean apply(@RequestParam String id) { 
+        return consensus.follow(id);
+    }
 }

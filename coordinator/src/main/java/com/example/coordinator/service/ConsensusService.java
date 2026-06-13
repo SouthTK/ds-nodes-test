@@ -3,7 +3,6 @@ package com.example.coordinator.service;
 import org.springframework.stereotype.Component;
 
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -12,12 +11,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import jakarta.annotation.PostConstruct;
-
 import java.util.List;
 import java.util.HashSet;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -39,9 +35,6 @@ public class ConsensusService {
     public String nodeStatus = "follower"; // do I need to sync???
     public String leaderId = null; // do I need to sync???
     public int term = 0;
-
-    @Value("${join_existed:false}")
-    boolean joinExisted;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -125,10 +118,8 @@ public class ConsensusService {
         return null;
     }
 
-    @PostConstruct
-    public boolean follow() {
-        String id = new Scanner(System.in).nextLine();
-
+    public boolean follow(String id) {
+        if (id.equals(nodeId)) {return false;}
         try {
             String targetUrl = "http://localhost:" + id + "/join";
             String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
@@ -143,9 +134,11 @@ public class ConsensusService {
             if (info == null) {
                 return false;
             } else {
+                nodesList.clear();
                 nodesList.addAll(info.getCoordinatorNodes());
-                processingService.addLlmNodes(info.getLlmNodes());
-                processingService.addDbNodes(info.getRecipeNodes());
+                storage.setNode(info.getCoordinatorNodes());
+                processingService.setLlmNodes(info.getLlmNodes());
+                processingService.setDbNodes(info.getRecipeNodes());
                 return true;
             }
         } catch (Exception e) {
