@@ -20,6 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.example.coordinator.model.VoteRequest;
 import com.example.coordinator.model.UserRequest;
 import com.example.coordinator.model.NodesInfo;
+import com.example.shared.model.LLMRequest;
 
 @Component 
 public class ConsensusService {
@@ -32,9 +33,10 @@ public class ConsensusService {
     private String nodeId; // do I need to sync???
     private boolean voted;
     
-    public String nodeStatus; // do I need to sync???
-    public String leaderId; // do I need to sync???
-    public int term;
+    private String nodeStatus; // do I need to sync???
+    private String leaderId; // do I need to sync???
+    private boolean leaderAlive;
+    private int term;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -46,6 +48,7 @@ public class ConsensusService {
         this.nodeStatus = "follower";
         this.leaderId = null;
         this.term = 0;
+        this.leaderAlive = false;
         }
 
     public boolean vote(VoteRequest request) { 
@@ -53,12 +56,15 @@ public class ConsensusService {
 
         if (this.term <= request.getTerm() && requestCount <= request.getRequestCount()) {
             if(this.term < request.getTerm()) {
-                this.term += 1;
+                this.term = request.getTerm();
                 this.voted = false;
             }
+
             int candidateRequestCount = request.getRequestCount();
-            if (candidateRequestCount >= 3 && !this.voted) {
+            if (candidateRequestCount >= requestCount && !this.voted) {
                 this.voted = true;
+                this.leaderId = request.getCandidateId();
+                this.leaderAlive = true;
                 this.nodeStatus = "follower";
                 processingService.setIsLeader(false);
                 return true;
@@ -70,6 +76,7 @@ public class ConsensusService {
     public boolean ping(String id, int term) {
         if (term >= this.term) {
             this.leaderId = id;
+            this.leaderAlive = true;
             this.nodeStatus = "follower";
             processingService.setIsLeader(false);
             this.term = term;
@@ -165,13 +172,29 @@ public class ConsensusService {
                         .queryParam("type", type)
                         .encode()
                         .toUriString();
-                return restTemplate.postForObject(urlTemplate, null, Boolean.class);
+                boolean result = restTemplate.postForObject(urlTemplate, null, Boolean.class);
+                if (!result) return result;
                 } catch (Exception e) {System.out.println("Broadcasting new worker nodes failed.");}
             }
+            return true;
         } else {
             processingService.apply(id, type);
         }
         return false;
+    }
+
+    public String redirect(LLMRequest request) {
+        System.out.println("Redirecting..");
+        if (leaderId != null) {
+            try {
+                String targetUrl = "http://localhost:" + leaderId + "/search";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<LLMRequest> entity = new HttpEntity<>(request, headers);
+                return restTemplate.postForObject(targetUrl, entity, String.class);
+            } catch (Exception e) {System.out.println("Redirecting fails.");}
+        }
+        return null;
     }
 
     @Scheduled(fixedDelay = 1000)
@@ -200,10 +223,12 @@ public class ConsensusService {
     @Scheduled(fixedDelay = 5000)
     public void scheduledTask() {
         System.out.println("Current Status: " + this.nodeStatus + " " + this.term);
+        System.out.println(nodesList);
         if (this.nodeStatus == "follower") {
-            if (this.leaderId != null) {this.leaderId = null;}
+            if (this.leaderAlive) {this.leaderAlive = false;}
             else {
                 this.nodeStatus = "candidate";
+                this.leaderId = null;
                 processingService.setIsLeader(false);
                 while (this.nodeStatus.equals("candidate")) {
                     try {
@@ -238,6 +263,7 @@ public class ConsensusService {
 
                     if (vote > ((nodesList.size() + 1) / 2) && this.nodeStatus.equals("candidate")) {
                         this.nodeStatus = "leader";
+                        this.leaderId = null;
                         processingService.setIsLeader(true);
                         processingService.processingThread();
                         processingService.updateQueue();

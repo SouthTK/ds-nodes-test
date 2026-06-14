@@ -24,12 +24,14 @@ public class CoordinatorService {
     private final RestTemplate restTemplate;
     private final ProcessingService processingService;
     private final RequestStorage storage;
+    private final ConsensusService consensus;
     
-    public CoordinatorService(RestTemplate restTemplate, 
+    public CoordinatorService(RestTemplate restTemplate, ConsensusService consensus,
             RequestStorage storage, ProcessingService processingService) {
         this.restTemplate = restTemplate;
         this.processingService = processingService;
-        this.storage = storage;
+        this.storage = storage; 
+        this.consensus = consensus;
     }
 
     public String search(LLMRequest request) { 
@@ -49,7 +51,9 @@ public class CoordinatorService {
 
             return id;
         } else {
-            return "Rejected, not leading.";
+            return consensus.redirect(request);
+            // redirect to leader??
+            // only if it is follower?
         }
     }
 
@@ -62,9 +66,5 @@ public class CoordinatorService {
 
     public UserRequest getTest(String id) {
         return storage.getRequest(id); 
-    }
-
-    public boolean copy(UserRequest request) { 
-        return storage.storeRequest(request.getId(), request);
     }
 }
