@@ -20,6 +20,11 @@ import com.example.shared.model.RecipeQueryResult;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +41,8 @@ public class ProcessingService {
     private final HashSet<String> dbNodes = new HashSet<>();
 
     private final LinkedBlockingQueue<String> requestQueue;
+    private final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(1);
+    private final ConcurrentHashMap<String, Integer> retryCounts = new ConcurrentHashMap<>();
 
     public ProcessingService(RestTemplate restTemplate, RequestStorage storage) {
         this.restTemplate = restTemplate;
@@ -116,8 +123,17 @@ public class ProcessingService {
                             this.putToQueue(id);
                             storage.broadCastCopy(request);
                         } else {
-                            System.out.println("No result, format request failed.");
-                            this.putToQueue(id);
+                            int retries = retryCounts.getOrDefault(id, 0) + 1;
+                            if (retries > 3) {
+                                System.out.println("LLM decompose permanently failed for " + id);
+                                retryCounts.remove(id);
+                                request.setTtl(LocalDateTime.now());
+                                storage.broadCastCopy(request);
+                            } else {
+                                retryCounts.put(id, retries);
+                                System.out.println("LLM decompose failed for " + id + ". Retrying in 5s... (attempt " + retries + ")");
+                                retryScheduler.schedule(() -> this.putToQueue(id), 5, TimeUnit.SECONDS);
+                            }
                         }
 
                     } else if (request.getState().equals("formatted")) {
@@ -131,18 +147,40 @@ public class ProcessingService {
                             this.putToQueue(id);
                             storage.broadCastCopy(request);
                         } else {
-                            System.out.println("No result, request failed.");
-                            this.putToQueue(id);
+                            int retries = retryCounts.getOrDefault(id, 0) + 1;
+                            if (retries > 3) {
+                                System.out.println("Recipe DB search permanently failed for " + id);
+                                retryCounts.remove(id);
+                                request.setTtl(LocalDateTime.now());
+                                storage.broadCastCopy(request);
+                            } else {
+                                retryCounts.put(id, retries);
+                                System.out.println("Recipe DB search failed for " + id + ". Retrying in 5s... (attempt " + retries + ")");
+                                retryScheduler.schedule(() -> this.putToQueue(id), 5, TimeUnit.SECONDS);
+                            }
                         }
 
                     } else if (request.getState().equals("unformatted results")) {
-
                         String finalResult = sendToLLMAnswerNode(request);
-                        request.setState("done");
-                        request.setResult(finalResult);
-                        storage.storeRequest(id, request);
-                        storage.broadCastCopy(request);
-                        
+
+                        if (finalResult != null && !finalResult.isEmpty()) {
+                            request.setState("done");
+                            request.setResult(finalResult);
+                            storage.storeRequest(id, request);
+                            storage.broadCastCopy(request);
+                        } else {
+                            int retries = retryCounts.getOrDefault(id, 0) + 1;
+                            if (retries > 3) {
+                                System.out.println("LLM answer generation permanently failed for " + id);
+                                retryCounts.remove(id);
+                                request.setTtl(LocalDateTime.now());
+                                storage.broadCastCopy(request);
+                            } else {
+                                retryCounts.put(id, retries);
+                                System.out.println("LLM answer generation failed for " + id + ". Retrying in 5s... (attempt " + retries + ")");
+                                retryScheduler.schedule(() -> this.putToQueue(id), 5, TimeUnit.SECONDS);
+                            }
+                        }
                     } else {
                         System.out.println("Something went very wrong");
                         this.putToQueue(id);
