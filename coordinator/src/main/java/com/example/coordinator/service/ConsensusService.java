@@ -246,7 +246,6 @@ public class ConsensusService {
                     VoteRequest request = new VoteRequest();
                     request.setRequestCount(storage.getRequestList().size());
                     request.setCandidateId(this.nodeId);
-                    request.setRequestCount(4);
                     request.setTerm(this.term);
 
                     System.out.println("Start election " + this.term);
