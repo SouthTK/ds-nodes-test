@@ -18,10 +18,10 @@ import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.List;
 import java.util.HashSet;
 
@@ -99,9 +99,9 @@ public class ProcessingService {
         Thread checkingThread = new Thread(() -> {
             while (isLeader) { 
                 try {
-                    String id = requestQueue.take(); // could block and processThread never die
+                    String id = requestQueue.poll(1, TimeUnit.SECONDS); 
+                    if (id == null) {continue;}
                     UserRequest request = storage.getRequest(id);
-
                     if (request == null) {continue;}
 
                     if (request.getState().equals("received")) {
@@ -137,12 +137,9 @@ public class ProcessingService {
 
                     } else if (request.getState().equals("unformatted result")) {
 
-                        // get the llm node to process
-                        // added all the new result back to request
-
-                        Thread.sleep(5000); 
+                        String finalResult = sendToLLMAnswerNode(request);
                         request.setState("done");
-                        request.setResult("final result is here");
+                        request.setResult(finalResult);
                         storage.storeRequest(id, request);
                         storage.broadCastCopy(request);
                         
@@ -170,7 +167,7 @@ public class ProcessingService {
             int attempt = 0;
             do {
                 attempt = attempt + 1;
-                String node = (String) llmNodes.toArray()[new Random().nextInt(numberOfNodes)];
+                String node = (String) llmNodes.toArray()[ThreadLocalRandom.current().nextInt(numberOfNodes)];
                 try {
                     String targetUrl = "http://localhost:" + node + "/llm/decompose";
                     HttpHeaders headers = new HttpHeaders();
@@ -187,31 +184,31 @@ public class ProcessingService {
         }
     }
 
-    // private String sendToLLMAnswerNode(UserRequest userRequest) {
-    //     int numberOfNodes = llmNodes.size();
-    //     if (numberOfNodes > 0)  {
-    //         int attempt = 0;
-    //         do {
-    //             attempt = attempt + 1;
-    //             String node = (String) llmNodes.toArray()[ThreadLocalRandom.current().nextInt(numberOfNodes)];
-    //             try {
-    //                 String targetUrl = "http://localhost:" + node + "/llm/answer";
-    //                 HttpHeaders headers = new HttpHeaders();
-    //                 headers.setContentType(MediaType.APPLICATION_JSON);
-    //                 HttpEntity<UserRequest> entity = new HttpEntity<>(userRequest, headers);
+    private String sendToLLMAnswerNode(UserRequest userRequest) {
+        int numberOfNodes = llmNodes.size();
+        if (numberOfNodes > 0)  {
+            int attempt = 0;
+            do {
+                attempt = attempt + 1;
+                String node = (String) llmNodes.toArray()[ThreadLocalRandom.current().nextInt(numberOfNodes)];
+                try {
+                    String targetUrl = "http://localhost:" + node + "/llm/answer";
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<UserRequest> entity = new HttpEntity<>(userRequest, headers);
 
-    //                 return restTemplate.postForObject(targetUrl, entity, String.class);
-    //             } catch (Exception e) {
-    //                 System.out.println("Calling llm service failed.");
-    //                 e.printStackTrace();
-    //             }
-    //         } while (attempt < 5);
-    //         return null;
-    //     } else {
-    //         System.out.println("No llm nodes found");
-    //         return null;
-    //     }
-    // }
+                    return restTemplate.postForObject(targetUrl, entity, String.class);
+                } catch (Exception e) {
+                    System.out.println("Calling llm service failed.");
+                    e.printStackTrace();
+                }
+            } while (attempt < 5);
+            return null;
+        } else {
+            System.out.println("No llm nodes found");
+            return null;
+        }
+    }
     
     private List<RecipeQueryResult> sendToDBNode(RecipeQuery recipeQuery) {
         int numberOfNodes = dbNodes.size();
