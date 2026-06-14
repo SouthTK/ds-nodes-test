@@ -17,9 +17,9 @@ import com.example.shared.model.LLMRequest;
 import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
 
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -135,7 +135,7 @@ public class ProcessingService {
                             this.putToQueue(id);
                         }
 
-                    } else if (request.getState().equals("unformatted result")) {
+                    } else if (request.getState().equals("unformatted results")) {
 
                         String finalResult = sendToLLMAnswerNode(request);
                         request.setState("done");

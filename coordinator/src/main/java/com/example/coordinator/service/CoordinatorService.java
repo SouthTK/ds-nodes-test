@@ -43,7 +43,7 @@ public class CoordinatorService {
             userRequest.setId(id);
             userRequest.setState("received");
             userRequest.setUserQuery(request.getUserQuery());
-            userRequest.setTtl(LocalDateTime.now().plusSeconds(30));
+            userRequest.setTtl(LocalDateTime.now().plusSeconds(300));
 
             processingService.addToQueue(id);
             storage.storeRequest(id, userRequest);
