@@ -80,7 +80,7 @@ public class SearchController {
     }
 
     @PostMapping("/follow") 
-    public boolean apply(@RequestParam String id) { 
+    public boolean follow(@RequestParam String id) { 
         return consensus.follow(id);
     }
 }
