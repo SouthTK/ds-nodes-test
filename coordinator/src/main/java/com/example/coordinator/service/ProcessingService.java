@@ -11,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-
 import com.example.coordinator.model.UserRequest;
 
 import com.example.shared.model.LLMRequest;
@@ -19,6 +18,7 @@ import com.example.shared.model.RecipeQuery;
 import com.example.shared.model.RecipeQueryResult;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -85,7 +85,11 @@ public class ProcessingService {
     } 
 
     public boolean addToQueue(String id) {
-         try {
+        return requestQueue.offer(id);
+    }
+
+    public boolean putToQueue(String id) {
+        try {
             requestQueue.put(id);
             return true;
         } catch (Exception e) {return false;}
@@ -95,7 +99,7 @@ public class ProcessingService {
         Thread checkingThread = new Thread(() -> {
             while (isLeader) { 
                 try {
-                    String id = requestQueue.take();
+                    String id = requestQueue.take(); // could block and processThread never die
                     UserRequest request = storage.getRequest(id);
 
                     if (request == null) {continue;}
@@ -109,32 +113,27 @@ public class ProcessingService {
                             request.setState("formatted");
                             request.setRecipeQuery(result);
                             storage.storeRequest(id, request);
-                            this.addToQueue(id);
+                            this.putToQueue(id);
                             storage.broadCastCopy(request);
                         } else {
-                            System.out.println("No result, request failed.");
-                            //storage.deleteRequest(id);
+                            System.out.println("No result, format request failed.");
+                            this.putToQueue(id);
                         }
 
                     } else if (request.getState().equals("formatted")) {
                         RecipeQuery recipeQuery = request.getRecipeQuery();
                         List<RecipeQueryResult> result = sendToDBNode(recipeQuery);
 
-                        if (result != null) {
+                        if (result != null && !result.isEmpty()) {
                             request.setState("unformatted results");
                             request.setRecipeQueryResults(result);
                             storage.storeRequest(id, request);
-                            this.addToQueue(id);
+                            this.putToQueue(id);
                             storage.broadCastCopy(request);
                         } else {
                             System.out.println("No result, request failed.");
-                            //storage.deleteRequest(id);
+                            this.putToQueue(id);
                         }
-
-                        request.setState("unformatted result");
-                        storage.storeRequest(id, request);
-                        this.addToQueue(id);
-                        storage.broadCastCopy(request);
 
                     } else if (request.getState().equals("unformatted result")) {
 
@@ -149,6 +148,7 @@ public class ProcessingService {
                         
                     } else {
                         System.out.println("Something went very wrong");
+                        this.putToQueue(id);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -172,7 +172,7 @@ public class ProcessingService {
                 attempt = attempt + 1;
                 String node = (String) llmNodes.toArray()[new Random().nextInt(numberOfNodes)];
                 try {
-                    String targetUrl = "http://localhost:" + node + "/llm";
+                    String targetUrl = "http://localhost:" + node + "/llm/decompose";
                     HttpHeaders headers = new HttpHeaders();
                     headers.setContentType(MediaType.APPLICATION_JSON);
                     HttpEntity<LLMRequest> entity = new HttpEntity<>(llmRequest, headers);
@@ -186,6 +186,32 @@ public class ProcessingService {
             return null;
         }
     }
+
+    // private String sendToLLMAnswerNode(UserRequest userRequest) {
+    //     int numberOfNodes = llmNodes.size();
+    //     if (numberOfNodes > 0)  {
+    //         int attempt = 0;
+    //         do {
+    //             attempt = attempt + 1;
+    //             String node = (String) llmNodes.toArray()[ThreadLocalRandom.current().nextInt(numberOfNodes)];
+    //             try {
+    //                 String targetUrl = "http://localhost:" + node + "/llm/answer";
+    //                 HttpHeaders headers = new HttpHeaders();
+    //                 headers.setContentType(MediaType.APPLICATION_JSON);
+    //                 HttpEntity<UserRequest> entity = new HttpEntity<>(userRequest, headers);
+
+    //                 return restTemplate.postForObject(targetUrl, entity, String.class);
+    //             } catch (Exception e) {
+    //                 System.out.println("Calling llm service failed.");
+    //                 e.printStackTrace();
+    //             }
+    //         } while (attempt < 5);
+    //         return null;
+    //     } else {
+    //         System.out.println("No llm nodes found");
+    //         return null;
+    //     }
+    // }
     
     private List<RecipeQueryResult> sendToDBNode(RecipeQuery recipeQuery) {
         int numberOfNodes = dbNodes.size();
@@ -206,9 +232,18 @@ public class ProcessingService {
                     if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                         results.addAll(response.getBody());
                     }
-                } catch (Exception e) {System.out.println("Calling RECIPE NODE service failed.");}
+                } catch (Exception e) {System.out.println("Calling recipe node (" + node + ") service failed.");}
             }
-            return results;
+
+            results.sort((r1, r2) -> {
+                Double s1 = r1.getScore() != null ? r1.getScore() : 0.0;
+                Double s2 = r2.getScore() != null ? r2.getScore() : 0.0;
+                return Double.compare(s2, s1);
+            });
+
+            if (results.size() > 10) {
+                return new ArrayList<>(results.subList(0, 10));
+            } else {return results;}
         } else {
             System.out.println("No recipe nodes found");
             return null;
