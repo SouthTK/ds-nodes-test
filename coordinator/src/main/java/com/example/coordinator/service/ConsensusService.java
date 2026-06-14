@@ -30,7 +30,7 @@ public class ConsensusService {
 
     private final HashSet<String> nodesList = new HashSet<>();
     @Value("${server.port:8080}")
-    private String nodeId; // do I need to sync???
+    private String nodeId; 
     private boolean voted;
     
     private String nodeStatus; // do I need to sync???
@@ -162,7 +162,7 @@ public class ConsensusService {
 
     public boolean apply(String id, String type) {
         if (nodeStatus.equals("leader")) {
-            // try service first??
+            // try service first maybe
             processingService.apply(id, type);
             for (String node : nodesList) {
                 try {
@@ -224,6 +224,7 @@ public class ConsensusService {
     public void scheduledTask() {
         System.out.println("Current Status: " + this.nodeStatus + " " + this.term);
         System.out.println(nodesList);
+
         if (this.nodeStatus == "follower") {
             if (this.leaderAlive) {this.leaderAlive = false;}
             else {
@@ -249,7 +250,6 @@ public class ConsensusService {
                     request.setTerm(this.term);
 
                     System.out.println("Start election " + this.term);
-                    // check status again maybe??
                     for (String node : nodesList) {
                         try {
                             String targetUrl = "http://localhost:" + node + "/vote";
