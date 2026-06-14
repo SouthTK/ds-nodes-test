@@ -162,7 +162,8 @@ public class ConsensusService {
 
     public boolean apply(String id, String type) {
         if (nodeStatus.equals("leader")) {
-            // try service first maybe
+            // Later: try service first, to prevent fraud
+
             processingService.apply(id, type);
             for (String node : nodesList) {
                 try {
@@ -256,7 +257,7 @@ public class ConsensusService {
                             headers.setContentType(MediaType.APPLICATION_JSON);
                             HttpEntity<VoteRequest> entity = new HttpEntity<>(request, headers);
                             Boolean result = restTemplate.postForObject(targetUrl, entity, Boolean.class);
-                            if (result) {vote = vote + 1;}
+                            if (Boolean.TRUE.equals(result)) {vote = vote + 1;}
                         } catch (Exception e) {System.out.println("Ask for vote failed.");}
                     }
 

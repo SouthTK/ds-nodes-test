@@ -51,8 +51,8 @@ public class RequestStorage {
         requestStatus.remove(id);
     }
 
+    // leader only method
     public void broadCastCopy(UserRequest request) { 
-        // only leaders
         for (String node : nodesList) {
             try {
                 String targetUrl = "http://localhost:" + node + "/copy";
@@ -60,7 +60,7 @@ public class RequestStorage {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<UserRequest> entity = new HttpEntity<>(request, headers);
                 Boolean result = restTemplate.postForObject(targetUrl, entity, Boolean.class);
-                if (result) {System.out.println("Broadcast request done.");}
+                if (Boolean.TRUE.equals(result)) {System.out.println("Broadcast request done.");}
             } catch (Exception e) {System.out.println("Broadcast request failed.");}
         }
     }
@@ -77,9 +77,7 @@ public class RequestStorage {
     @Scheduled(fixedDelay = 5000)
     private void cleanUp() {
         LocalDateTime now = LocalDateTime.now(); 
-        requestStatus.values().removeIf(request -> request.getTtl().isBefore(now));
-
-    //     requestStatus.values().removeIf(request -> 
-    // request.getTtl() != null && request.getTtl().isBefore(now)
+        requestStatus.values().removeIf(request -> 
+            request.getTtl() == null || request.getTtl().isBefore(now));
     }
 }

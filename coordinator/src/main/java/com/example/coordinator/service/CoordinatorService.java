@@ -45,15 +45,13 @@ public class CoordinatorService {
             userRequest.setUserQuery(request.getUserQuery());
             userRequest.setTtl(LocalDateTime.now().plusSeconds(30));
 
-            storage.storeRequest(id, userRequest);
             processingService.addToQueue(id);
+            storage.storeRequest(id, userRequest);
             storage.broadCastCopy(userRequest);
 
             return id;
         } else {
             return consensus.redirect(request);
-            // redirect to leader??
-            // only if it is follower?
         }
     }
 

@@ -92,12 +92,13 @@ public class ProcessingService {
     }
 
     public void processingThread() {
-        // add time out??
         Thread checkingThread = new Thread(() -> {
             while (isLeader) { 
                 try {
                     String id = requestQueue.take();
                     UserRequest request = storage.getRequest(id);
+
+                    if (request == null) {continue;}
 
                     if (request.getState().equals("received")) {
                         LLMRequest llmRequest = new LLMRequest();
