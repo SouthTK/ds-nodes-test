@@ -36,9 +36,10 @@ public class ConsensusService {
 
     private volatile String nodeStatus; 
     private volatile String leaderId; 
-    private boolean leaderAlive;
+    
     public AtomicInteger term;
-        private AtomicBoolean voted;
+    private AtomicBoolean voted;
+    private AtomicBoolean leaderAlive;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -46,11 +47,11 @@ public class ConsensusService {
         this.processingService = processingService;
         this.storage = storage;
 
-        this.voted = new AtomicBoolean(false);
         this.nodeStatus = "follower";
         this.leaderId = null;
-        this.leaderAlive = false;
         this.term = new AtomicInteger(0);
+        this.voted = new AtomicBoolean(false);
+        this.leaderAlive = new AtomicBoolean(false);
         }
 
     public boolean vote(VoteRequest request) { 
@@ -65,7 +66,7 @@ public class ConsensusService {
             int candidateRequestCount = request.getRequestCount();
             if (candidateRequestCount >= requestCount && this.voted.compareAndSet(false, true)) {
                 this.leaderId = request.getCandidateId();
-                this.leaderAlive = true;
+                this.leaderAlive.set(true);
                 this.nodeStatus = "follower";
                 processingService.setIsLeader(false);
                 return true;
@@ -77,7 +78,7 @@ public class ConsensusService {
     public boolean ping(String id, int term) {
         if (term >= this.term.get()) {
             this.leaderId = id;
-            this.leaderAlive = true;
+            this.leaderAlive.set(true);
             this.nodeStatus = "follower";
             processingService.setIsLeader(false);
             this.term.set(term);
@@ -175,7 +176,6 @@ public class ConsensusService {
                         .encode()
                         .toUriString();
                 boolean result = restTemplate.postForObject(urlTemplate, null, Boolean.class);
-                if (!result) return result;
                 } catch (Exception e) {System.out.println("Broadcasting new worker nodes failed.");}
             }
             return true;
@@ -228,8 +228,7 @@ public class ConsensusService {
         System.out.println(nodesList);
 
         if (this.nodeStatus == "follower") {
-            if (this.leaderAlive) {this.leaderAlive = false;}
-            else {
+            if (!this.leaderAlive.compareAndSet(true, false)) {
                 this.nodeStatus = "candidate";
                 this.leaderId = null;
                 processingService.setIsLeader(false);
