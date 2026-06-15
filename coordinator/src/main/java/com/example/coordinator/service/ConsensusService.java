@@ -33,12 +33,12 @@ public class ConsensusService {
     private final HashSet<String> nodesList = new HashSet<>();
     @Value("${server.port:8080}")
     private String nodeId; 
-    private boolean voted;
-    
-    private String nodeStatus; // do I need to sync???
-    private String leaderId; // do I need to sync???
+
+    private volatile String nodeStatus; 
+    private volatile String leaderId; 
     private boolean leaderAlive;
     public AtomicInteger term;
+        private AtomicBoolean voted;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -46,7 +46,7 @@ public class ConsensusService {
         this.processingService = processingService;
         this.storage = storage;
 
-        this.voted = false;
+        this.voted = new AtomicBoolean(false);
         this.nodeStatus = "follower";
         this.leaderId = null;
         this.leaderAlive = false;
@@ -59,12 +59,11 @@ public class ConsensusService {
         if (this.term.get() <= request.getTerm() && requestCount <= request.getRequestCount()) {
             if(this.term.get() < request.getTerm()) {
                 this.term.set(request.getTerm());
-                this.voted = false;
+                this.voted.set(false);
             }
 
             int candidateRequestCount = request.getRequestCount();
-            if (candidateRequestCount >= requestCount && !this.voted) {
-                this.voted = true;
+            if (candidateRequestCount >= requestCount && this.voted.compareAndSet(false, true)) {
                 this.leaderId = request.getCandidateId();
                 this.leaderAlive = true;
                 this.nodeStatus = "follower";
@@ -243,7 +242,7 @@ public class ConsensusService {
                     if (!this.nodeStatus.equals("candidate")) {return;}
 
                     this.term.incrementAndGet();
-                    this.voted = false;
+                    this.voted.set(false);
                     int vote = 1;
 
                     VoteRequest request = new VoteRequest();
