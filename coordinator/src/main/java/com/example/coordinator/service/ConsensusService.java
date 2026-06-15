@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.ArrayList;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.example.coordinator.model.VoteRequest;
 import com.example.coordinator.model.UserRequest;
@@ -36,7 +38,7 @@ public class ConsensusService {
     private String nodeStatus; // do I need to sync???
     private String leaderId; // do I need to sync???
     private boolean leaderAlive;
-    private int term;
+    public AtomicInteger term;
 
     public ConsensusService(RestTemplate restTemplate, 
             ProcessingService processingService, RequestStorage storage) {
@@ -47,16 +49,16 @@ public class ConsensusService {
         this.voted = false;
         this.nodeStatus = "follower";
         this.leaderId = null;
-        this.term = 0;
         this.leaderAlive = false;
+        this.term = new AtomicInteger(0);
         }
 
     public boolean vote(VoteRequest request) { 
         int requestCount = storage.getRequestList().size();
 
-        if (this.term <= request.getTerm() && requestCount <= request.getRequestCount()) {
-            if(this.term < request.getTerm()) {
-                this.term = request.getTerm();
+        if (this.term.get() <= request.getTerm() && requestCount <= request.getRequestCount()) {
+            if(this.term.get() < request.getTerm()) {
+                this.term.set(request.getTerm());
                 this.voted = false;
             }
 
@@ -74,12 +76,12 @@ public class ConsensusService {
     }
 
     public boolean ping(String id, int term) {
-        if (term >= this.term) {
+        if (term >= this.term.get()) {
             this.leaderId = id;
             this.leaderAlive = true;
             this.nodeStatus = "follower";
             processingService.setIsLeader(false);
-            this.term = term;
+            this.term.set(term);
             return true;
         } else {return false;}
     }
@@ -91,7 +93,7 @@ public class ConsensusService {
                 String targetUrl = "http://localhost:" + id + "/ping";
                 String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
                         .queryParam("id", nodeId)
-                        .queryParam("term", this.term)
+                        .queryParam("term", this.term.get())
                         .encode()
                         .toUriString();
 
@@ -206,7 +208,7 @@ public class ConsensusService {
                     String targetUrl = "http://localhost:" + node + "/ping";
                     String urlTemplate = UriComponentsBuilder.fromHttpUrl(targetUrl)
                             .queryParam("id", nodeId)
-                            .queryParam("term", this.term)
+                            .queryParam("term", this.term.get())
                             .encode()
                             .toUriString();
 
@@ -223,7 +225,7 @@ public class ConsensusService {
 
     @Scheduled(fixedDelay = 5000)
     public void scheduledTask() {
-        System.out.println("Current Status: " + this.nodeStatus + " " + this.term);
+        System.out.println("Current Status: " + this.nodeStatus + " " + this.term.get());
         System.out.println(nodesList);
 
         if (this.nodeStatus == "follower") {
@@ -240,14 +242,14 @@ public class ConsensusService {
 
                     if (!this.nodeStatus.equals("candidate")) {return;}
 
-                    this.term = term + 1;
+                    this.term.incrementAndGet();
                     this.voted = false;
                     int vote = 1;
 
                     VoteRequest request = new VoteRequest();
                     request.setRequestCount(storage.getRequestList().size());
                     request.setCandidateId(this.nodeId);
-                    request.setTerm(this.term);
+                    request.setTerm(this.term.get());
 
                     System.out.println("Start election " + this.term);
                     for (String node : nodesList) {
