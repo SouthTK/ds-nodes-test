@@ -65,10 +65,10 @@ public class ConsensusService {
 
             int candidateRequestCount = request.getRequestCount();
             if (candidateRequestCount >= requestCount && this.voted.compareAndSet(false, true)) {
-                this.leaderId = request.getCandidateId();
-                this.leaderAlive.set(true);
-                this.nodeStatus = "follower";
-                processingService.setIsLeader(false);
+                //this.leaderId = request.getCandidateId();
+                //this.leaderAlive.set(true);
+                //this.nodeStatus = "follower";
+                //processingService.setIsLeader(false);
                 return true;
                 } 
             }
